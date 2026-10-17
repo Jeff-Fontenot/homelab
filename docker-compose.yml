@@ -1,3 +1,4 @@
+ci_failure_test: true
 
 networks:
   homelab:
