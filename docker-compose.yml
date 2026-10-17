@@ -1,0 +1,344 @@
+version: "3.9"
+
+networks:
+  homelab:
+    driver: bridge
+
+services:
+  traefik:
+    image: traefik:v3.0
+    container_name: traefik
+    restart: unless-stopped
+    networks: [homelab]
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./data/traefik:/etc/traefik
+    environment:
+      - CF_DNS_API_TOKEN=${CF_DNS_API_TOKEN}
+      - ACME_EMAIL=${ACME_EMAIL}
+      # You may omit CF_ZONE_API_TOKEN entirely. If you keep it:
+      # - CF_ZONE_API_TOKEN=${CF_ZONE_API_TOKEN}
+    command:
+      - --api.dashboard=true
+      - --providers.docker=true
+      - --providers.docker.network=homelab
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+      - --metrics.prometheus=true
+      - --metrics.prometheus.addEntryPointsLabels=true
+      - --metrics.prometheus.addRoutersLabels=true
+      - --providers.file.filename=/etc/traefik/dynamic.yml
+      # ACME config
+      - --certificatesresolvers.cloudflare.acme.email=${ACME_EMAIL}
+      - --certificatesresolvers.cloudflare.acme.storage=/etc/traefik/acme.json
+      - --certificatesresolvers.cloudflare.acme.dnschallenge=true
+      - --certificatesresolvers.cloudflare.acme.dnschallenge.provider=cloudflare
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=homelab
+      - traefik.http.routers.traefik.rule=Host(`traefik.dash.itodyssey.io`)
+      - traefik.http.routers.traefik.entrypoints=websecure
+      - traefik.http.routers.traefik.tls=true
+      - traefik.http.routers.traefik.service=api@internal
+
+
+
+
+  dashy:
+    image: lissy93/dashy:latest
+    container_name: dashy
+    restart: unless-stopped
+    networks: [homelab]
+    environment:
+      - NODE_ENV=production
+      - HOST=0.0.0.0
+      - VUE_APP_PROXMOX_TOKEN=${DASHY_PROXMOX_TOKEN}
+    # No host port publish needed; Traefik will talk to the container directly
+    volumes:
+      - ./dashy-conf.yml:/app/user-data/conf.yml
+      - ./icons:/app/user-data/item-icons:ro
+      # Upstream bug fix: the stock Proxmox widget's sort comparator (Number(a.vmid) >
+      # Number(b.vmid)) returns a boolean instead of a signed number, so Array.sort can't
+      # order VMs correctly. This overlays a one-line-patched copy of that source file,
+      # picked up by the image's own build-on-start process.
+      - ./patches/Proxmox.vue:/app/src/components/Widgets/Proxmox.vue:ro
+      # Normalizes RSS excerpt length across feeds -- some feeds (e.g. Kubernetes
+      # Blog) ship the full article body instead of a summary in <description>.
+      - ./patches/RssFeed.vue:/app/src/components/Widgets/RssFeed.vue:ro
+      # Upstream renders monitors in whatever order Kuma's own /metrics endpoint
+      # emits them, which Kuma gives no way to configure. This overlays a copy
+      # that sorts the final list alphabetically by monitor name.
+      - ./patches/UptimeKuma.vue:/app/src/components/Widgets/UptimeKuma.vue:ro
+      - ./secrets/pihole/api-key:/run/secrets/pihole-api-key:ro
+      - ./secrets/uptime-kuma/api-key:/run/secrets/kuma-api-key:ro
+    # Dashy bakes widget secrets in as VUE_APP_* vars at its internal build step
+    # (runs fresh on every container start), so export them from the mounted
+    # secret files before handing off to the image's normal entrypoint/command.
+    entrypoint:
+      - /bin/sh
+      - -c
+      - >
+        export VUE_APP_PIHOLE_API_KEY="$$(cat /run/secrets/pihole-api-key)" &&
+        export VUE_APP_KUMA_API_KEY="$$(cat /run/secrets/kuma-api-key)" &&
+        exec docker-entrypoint.sh yarn build-and-start
+    healthcheck:
+      test: ['CMD', 'node', '/app/services/healthcheck']
+      interval: 90s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.dashy.rule=Host(`dash.itodyssey.io`)
+      - traefik.http.routers.dashy.entrypoints=websecure
+      - traefik.http.routers.dashy.tls.certresolver=cloudflare
+      # Dashy listens on 8080 inside the container
+      - traefik.http.services.dashy.loadbalancer.server.port=8080
+      - traefik.http.routers.dashy.tls.domains[0].main=dash.itodyssey.io
+      - traefik.http.routers.dashy.tls.domains[0].sans=*.dash.itodyssey.io
+
+  unbound:
+    image: mvance/unbound:latest
+    container_name: unbound
+    restart: unless-stopped
+    networks: [homelab]
+    #volumes:
+    #  - ./data/unbound:/opt/unbound/etc/unbound
+
+  pihole:
+    image: pihole/pihole:latest
+    container_name: pihole
+    restart: unless-stopped
+    networks: [homelab]
+    ports:
+      - "53:53/tcp"
+      - "53:53/udp"
+    environment:
+      - TZ=America/Chicago
+      - WEBPASSWORD=${PIHOLE_PASSWORD}
+      # Talk to Unbound by service name on the docker network
+      - DNS1=unbound#53
+      - DNS2=no
+    volumes:
+      - ./data/pihole:/etc/pihole
+      - ./data/pihole/dnsmasq.d:/etc/dnsmasq.d
+    depends_on:
+      - unbound
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.pihole.rule=Host(`pihole.dash.itodyssey.io`)
+      - traefik.http.routers.pihole.entrypoints=websecure
+      - traefik.http.routers.pihole.tls=true
+      - traefik.http.routers.pihole.tls.certresolver=cloudflare
+      - traefik.http.services.pihole.loadbalancer.server.port=80
+
+  uptime-kuma:
+    image: louislam/uptime-kuma:2.5.6
+    container_name: uptime-kuma
+    restart: unless-stopped
+    networks: [homelab]
+    volumes:
+      - ./data/uptime-kuma:/app/data
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=homelab
+      - traefik.http.routers.uptime-kuma.rule=Host(`status.dash.itodyssey.io`)
+      - traefik.http.routers.uptime-kuma.entrypoints=websecure
+      - traefik.http.routers.uptime-kuma.tls=true
+      - traefik.http.routers.uptime-kuma.tls.certresolver=cloudflare
+      - traefik.http.services.uptime-kuma.loadbalancer.server.port=3001
+
+  diun:
+    image: crazymax/diun:latest
+    container_name: diun
+    restart: unless-stopped
+    networks: [homelab]
+    volumes:
+      - ./data/diun:/data
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      - TZ=America/Chicago
+      - CONFIG=/data/diun.yml
+
+  dozzle:
+    image: amir20/dozzle:latest
+    container_name: dozzle
+    restart: unless-stopped
+    networks: [homelab]
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=homelab
+      - traefik.http.routers.dozzle.rule=Host(`dozzle.dash.itodyssey.io`)
+      - traefik.http.routers.dozzle.entrypoints=websecure
+      - traefik.http.routers.dozzle.tls=true
+      - traefik.http.routers.dozzle.tls.certresolver=cloudflare
+      - traefik.http.services.dozzle.loadbalancer.server.port=8080
+
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+    restart: unless-stopped
+    networks: [homelab]
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./data/portainer:/data
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=homelab
+      - traefik.http.routers.portainer.rule=Host(`portainer.dash.itodyssey.io`)
+      - traefik.http.routers.portainer.entrypoints=websecure
+      - traefik.http.routers.portainer.tls=true
+      - traefik.http.routers.portainer.tls.certresolver=cloudflare
+      - traefik.http.services.portainer.loadbalancer.server.port=9000
+
+  grafana:
+    image: grafana/grafana:latest
+    environment:
+      - GF_SECURITY_ALLOW_EMBEDDING=true
+    container_name: grafana
+    restart: unless-stopped
+    networks: [homelab]
+    volumes:
+      - ./data/grafana:/var/lib/grafana
+      - ./data/grafana-provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=homelab
+      - traefik.http.routers.grafana.rule=Host(`grafana.dash.itodyssey.io`)
+      - traefik.http.routers.grafana.entrypoints=websecure
+      - traefik.http.routers.grafana.tls=true
+      - traefik.http.routers.grafana.tls.certresolver=cloudflare
+      - traefik.http.services.grafana.loadbalancer.server.port=3000
+
+        # --- PROMETHEUS ---
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    restart: unless-stopped
+    networks: [homelab]
+    volumes:
+      - ./data/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./data/prometheus/data:/prometheus
+      - ./data/prometheus/portfolio-rules.yml:/etc/prometheus/portfolio-rules.yml:ro
+      - ./secrets/prometheus:/etc/prometheus/secrets:ro
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=15d
+      - --web.enable-lifecycle
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=homelab
+      - traefik.http.routers.prom.rule=Host(`prometheus.dash.itodyssey.io`)
+      - traefik.http.routers.prom.entrypoints=websecure
+      - traefik.http.routers.prom.tls=true
+      - traefik.http.services.prom.loadbalancer.server.port=9090
+
+  # --- NODE EXPORTER (host metrics) ---
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node-exporter
+    restart: unless-stopped
+    networks: [homelab]
+    pid: host
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - --path.rootfs=/rootfs
+
+  # --- CADVISOR (container metrics) ---
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: cadvisor
+    restart: unless-stopped
+    networks: [homelab]
+    privileged: true
+    devices:
+      - /dev/kmsg
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    # no labels; scrape via Prometheus target
+
+  # --- PI-HOLE EXPORTER (DNS stats to Prometheus) ---
+  pihole-exporter:
+    image: ekofr/pihole-exporter:latest
+    container_name: pihole-exporter
+    restart: unless-stopped
+    networks: [homelab]
+    environment:
+      - PIHOLE_HOSTNAME=pihole
+      - PIHOLE_PORT=80
+      - PIHOLE_PASSWORD=${PIHOLE_EXPORTER_PASSWORD}
+      - INTERVAL=30s
+
+  loki:
+    image: grafana/loki:latest
+    container_name: loki
+    volumes:
+      - ./data/loki:/loki
+      - ./data/loki/config.yml:/etc/loki/config.yml
+    command: -config.file=/etc/loki/config.yml
+    networks:
+      - homelab
+    restart: unless-stopped
+
+  promtail:
+    image: grafana/promtail:latest
+    container_name: promtail
+    volumes:
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./data/promtail/config.yml:/etc/promtail/config.yml
+      - /var/log:/var/log:ro
+    command: -config.file=/etc/promtail/config.yml
+    networks:
+      - homelab
+    restart: unless-stopped
+
+  alloy:
+    image: grafana/alloy:latest
+    container_name: alloy
+    restart: unless-stopped
+    networks: [homelab]
+    environment:
+      - GRAFANA_CLOUD_PROMETHEUS_URL=${GRAFANA_CLOUD_PROMETHEUS_URL}
+      - GRAFANA_CLOUD_PROMETHEUS_USER=${GRAFANA_CLOUD_PROMETHEUS_USER}
+      - GRAFANA_CLOUD_API_KEY=${GRAFANA_CLOUD_API_KEY}
+    volumes:
+      - ./data/alloy/config.alloy:/etc/alloy/config.alloy:ro
+      - ./data/alloy/data:/var/lib/alloy/data
+    command:
+      - run
+      - --storage.path=/var/lib/alloy/data
+      - --server.http.listen-addr=0.0.0.0:12345
+      - /etc/alloy/config.alloy
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=homelab
+      - traefik.http.routers.alloy.rule=Host(`alloy.dash.itodyssey.io`)
+      - traefik.http.routers.alloy.entrypoints=websecure
+      - traefik.http.routers.alloy.tls=true
+      - traefik.http.routers.alloy.tls.certresolver=cloudflare
+      - traefik.http.services.alloy.loadbalancer.server.port=12345
+
+  # --- PVE EXPORTER (Proxmox hypervisor metrics, via read-only API token) ---
+  pve-exporter:
+    image: prompve/prometheus-pve-exporter:latest
+    container_name: pve-exporter
+    user: "65534:65534"
+    restart: unless-stopped
+    networks: [homelab]
+    volumes:
+      - ./secrets/prometheus/pve.yml:/etc/prometheus/pve.yml:ro
+    # no labels/ports published; scraped internally by Prometheus on the homelab network

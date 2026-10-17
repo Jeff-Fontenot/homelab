@@ -1,0 +1,62 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - /etc/prometheus/portfolio-rules.yml
+
+scrape_configs:
+  # Prometheus itself
+  - job_name: prometheus
+    static_configs:
+      - targets: ['prometheus:9090']
+
+  # Traefik (enable metrics flags in step 3)
+  - job_name: traefik
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['traefik:8080']
+
+  # Linux host metrics
+  - job_name: node
+    static_configs:
+      - targets: ['node-exporter:9100']
+
+  # Docker/container metrics
+  - job_name: cadvisor
+    static_configs:
+      - targets: ['cadvisor:8080']
+
+  # Pi-hole metrics (via exporter)
+  - job_name: pihole
+    static_configs:
+      - targets: ['pihole-exporter:9617']
+
+  # Proxmox hypervisor host metrics (via pve-exporter, which queries the
+  # Proxmox API using a read-only PVEAuditor token -- see secrets/prometheus/pve.yml)
+  - job_name: pve
+    metrics_path: /pve
+    params:
+      module: [default]
+    static_configs:
+      - targets: ['192.168.0.17']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: pve-exporter:9221
+
+
+  # Kubernetes object state through the authenticated API proxy
+  - job_name: kubernetes-state
+    scheme: https
+    metrics_path: /api/v1/namespaces/observability/services/kube-state-metrics:metrics/proxy/metrics
+    authorization:
+      type: Bearer
+      credentials_file: /etc/prometheus/secrets/k3s-scraper.token
+    tls_config:
+      ca_file: /etc/prometheus/secrets/k3s-ca.crt
+    static_configs:
+      - targets: ['192.168.0.13:6443']

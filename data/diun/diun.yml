@@ -1,0 +1,14 @@
+watch:
+  workers: 20
+  schedule: "0 */6 * * *"
+  firstCheckNotif: false
+
+providers:
+  docker:
+    watchByDefault: true
+    watchStopped: false
+
+notif:
+  # No notifier configured yet -- results land in `docker logs diun` for now.
+  # Add one (ntfy, Discord/Slack webhook, Gotify, email, etc.) once you've
+  # picked where you want update alerts to actually go.

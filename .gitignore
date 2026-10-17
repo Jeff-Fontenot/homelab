@@ -1,0 +1,33 @@
+# Local credentials; example files contain placeholders only.
+.env
+.env.*
+!.env.example
+/secrets/**
+!/secrets/README.md
+
+# Persistent application state requires separate backups.
+# Ignore all data contents, then include specific configuration files.
+/data/**
+!/data/diun/
+!/data/diun/diun.yml
+!/data/grafana-provisioning/
+!/data/grafana-provisioning/datasources/
+!/data/grafana-provisioning/datasources/prometheus.yml
+!/data/prometheus/
+!/data/prometheus/prometheus.yml
+!/data/prometheus/portfolio-rules.yml
+!/data/promtail/
+!/data/promtail/config.yml
+!/data/traefik/
+!/data/traefik/dynamic.yml
+!/data/unbound/
+!/data/unbound/unbound.conf
+
+# Backup files left by manual edits.
+*.bak
+*.backup
+*.orig
+
+# OS/editor files.
+.DS_Store
+*.swp

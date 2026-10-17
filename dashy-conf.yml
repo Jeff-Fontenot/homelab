@@ -1,0 +1,739 @@
+pageInfo:
+  title: Odyssey Homelab
+  description: Homelab operations dashboard
+  logo: /item-icons/odyssey-homelab-logo.png
+  navLinks:
+    - title: Portfolio
+      path: https://jeff.itodyssey.io
+
+appConfig:
+  theme: glass
+  layout: horizontal
+  iconSize: large
+  language: en
+  statusCheck: true
+  openingMethod: newtab
+  showSplashScreen: False
+  customCss: |
+    :root {
+      --odyssey-bg-0: #08090d;
+      --odyssey-panel: rgba(13, 15, 20, 0.72);
+      --odyssey-line: rgba(253, 224, 71, 0.22);
+      --odyssey-gold: #fde047;
+      --odyssey-gold-soft: #facc15;
+      --odyssey-blue: #24aff5;
+      --odyssey-orange: #f76d11;
+      --odyssey-text: #f4f4f5;
+      --odyssey-muted: #cbd5e1;
+      --odyssey-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+    }
+
+    html, body, #app {
+      background: #08090d !important;
+      color: var(--odyssey-text) !important;
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif !important;
+    }
+
+    body {
+      position: relative;
+    }
+
+    /* Same ambient mesh glow as jeff.itodyssey.io, over the identical #08090d base */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
+      background:
+        radial-gradient(60% 45% at 18% 8%, rgba(250, 204, 21, 0.10), transparent 60%),
+        radial-gradient(50% 40% at 85% 18%, rgba(59, 130, 246, 0.10), transparent 60%),
+        radial-gradient(70% 50% at 50% 100%, rgba(250, 204, 21, 0.05), transparent 60%),
+        #08090d;
+    }
+
+    .header,
+    .settings-menu,
+    .modal-content,
+    .section-list,
+    .widgets,
+    .search-container input,
+    .tag,
+    .clock,
+    .footer,
+    .item-group-container {
+      background: var(--odyssey-panel) !important;
+      border: 1px solid var(--odyssey-line) !important;
+      box-shadow: var(--odyssey-shadow) !important;
+      backdrop-filter: blur(20px) saturate(150%);
+      -webkit-backdrop-filter: blur(20px) saturate(150%);
+    }
+
+    .header {
+      position: sticky;
+      top: 12px;
+      z-index: 40;
+      margin: 18px auto 28px auto !important;
+      max-width: 1400px;
+      border-radius: 16px !important;
+      padding: 18px 26px !important;
+      background: linear-gradient(160deg, rgba(255, 255, 255, 0.07), rgba(13, 15, 20, 0.92) 45%) !important;
+    }
+
+    /* Logo lockup already contains the "Odyssey Homelab" wordmark, so size it up
+       and visually hide the redundant plain-text h1 (kept in the DOM for a11y/SEO) */
+    .page-titles {
+      min-height: 64px;
+    }
+
+    .page-titles img.site-logo {
+      max-width: none !important;
+      width: 280px;
+      height: auto;
+      margin: 0 !important;
+      filter: drop-shadow(0 0 16px rgba(253, 224, 71, 0.2));
+    }
+
+    .page-titles .text {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+    }
+
+    .header .title,
+    .page-title,
+    h1, h2, h3 {
+      color: var(--odyssey-text) !important;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .subtitle,
+    .description,
+    p,
+    span,
+    .item-description,
+    .section-description {
+      color: var(--odyssey-muted) !important;
+    }
+
+    .section-heading {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px !important;
+      padding: 10px 16px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, rgba(253, 224, 71, 0.14), rgba(36, 175, 245, 0.12));
+      border: 1px solid rgba(253, 224, 71, 0.22);
+    }
+
+    .item,
+    .service-card,
+    .item-group,
+    .item-container > * {
+      border-radius: 16px !important;
+    }
+
+    .item {
+      position: relative;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.10) !important;
+      background:
+        radial-gradient(140% 100% at 18% -10%, rgba(255, 255, 255, 0.10), transparent 55%),
+        linear-gradient(160deg, rgba(255, 255, 255, 0.06), rgba(13, 15, 20, 0.94) 45%) !important;
+      box-shadow:
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.14),
+        0 16px 38px rgba(0, 0, 0, 0.36) !important;
+      transition: transform 300ms cubic-bezier(0.16, 1, 0.3, 1), border-color 300ms ease, box-shadow 300ms ease !important;
+    }
+
+    .item::before {
+      content: "";
+      position: absolute;
+      inset: 0 auto auto 0;
+      width: 100%;
+      height: 4px;
+      background: linear-gradient(90deg, #ff8c00, var(--odyssey-gold) 65%, var(--odyssey-orange));
+      opacity: 0.95;
+    }
+
+    .item:hover {
+      transform: translateY(-4px);
+      border-color: rgba(253, 224, 71, 0.4) !important;
+      box-shadow:
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.2),
+        0 22px 44px rgba(0, 0, 0, 0.42),
+        0 0 32px -8px rgba(253, 224, 71, 0.35) !important;
+    }
+
+    .item-title,
+    .item-name {
+      color: var(--odyssey-text) !important;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+
+    /* Full-colour tile-icons (hl-/sh- prefixed) are plain images, so only glow them;
+       the si- prefixed simple-icons fallback still inherits text colour via currentColor */
+    .item-icon img.tile-icon {
+      filter: drop-shadow(0 0 10px rgba(253, 224, 71, 0.25));
+    }
+
+    .item-icon svg.simple-icons {
+      filter:
+        drop-shadow(0 0 10px rgba(253, 224, 71, 0.3))
+        drop-shadow(0 0 18px rgba(36, 175, 245, 0.14));
+    }
+
+    a, .nav-link {
+      color: var(--odyssey-gold-soft) !important;
+    }
+
+    /* Nav pill (e.g. the "Portfolio" link) pulls its background from a theme
+       CSS variable that shifts with whichever Theme is selected in the UI --
+       pin it so it always matches this design regardless of that setting. */
+    .nav-item {
+      background: rgba(253, 224, 71, 0.08) !important;
+      transition: background 200ms ease;
+    }
+
+    .nav-item:hover {
+      background: rgba(253, 224, 71, 0.18) !important;
+    }
+
+    /* Some RSS feeds (e.g. The New Stack) embed raw width/height attributes on
+       inline article images. The widget's own CSS only constrains max-width,
+       so the height attribute's pixel value stays fixed and the image stretches.
+       Forcing height back to auto restores the real aspect ratio. */
+    .post-row .post-body img {
+      height: auto !important;
+    }
+
+    /* Dashy has no concept of nesting two widgets into one visual column --
+       each entry under a section's `widgets:` list is just a sibling flex
+       item in one row (see Section.vue's `.widget-list.wide`), sized to its
+       own natural height. This overrides Mission Control's row to a 4-column,
+       3-row grid instead: widgets 3+4+5 (Proxmox VMs, Proxmox Containers,
+       Kubernetes) stack into the shared 3rd column, while widget 6 (Proxmox
+       Metrics) gets the 4th column to itself, spanning the full height so
+       its gauges have room to breathe.
+       Fragile by nature: it targets widgets by position (nth-child), not
+       identity, since Dashy gives widgets no id/class of their own. Adding,
+       removing, or reordering widgets in Mission Control's YAML will require
+       updating these nth-child numbers to match. */
+    #section-outer-home-mission-control .widget-list.wide {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      align-items: start;
+      gap: 0 1rem;
+    }
+    #section-outer-home-mission-control .widget-base:nth-child(1) {
+      grid-column: 1;
+      grid-row: 1 / span 3;
+    }
+    #section-outer-home-mission-control .widget-base:nth-child(2) {
+      grid-column: 2;
+      grid-row: 1 / span 3;
+    }
+    #section-outer-home-mission-control .widget-base:nth-child(3) {
+      grid-column: 3;
+      grid-row: 1;
+    }
+    #section-outer-home-mission-control .widget-base:nth-child(4) {
+      grid-column: 3;
+      grid-row: 2;
+    }
+    #section-outer-home-mission-control .widget-base:nth-child(5) {
+      grid-column: 3;
+      grid-row: 3;
+    }
+    #section-outer-home-mission-control .widget-base:nth-child(6) {
+      grid-column: 4;
+      grid-row: 1 / span 3;
+    }
+
+    /* Give each Mission Control widget the same card treatment as the
+       Command Deck tiles (.item), so the section doesn't look like loose
+       floating text. Proxmox VMs/Containers/Kubernetes (column 3, widgets
+       3-5) need to read as ONE card rather than three, but a shared
+       background drawn as a grid-spanning pseudo-element sizes itself to
+       the tallest *row track* across the whole grid (shared with columns
+       1/2/4), not to column 3's own content -- which left dead space below
+       Kubernetes whenever another column was taller. Instead each of the
+       three widgets gets its own real background/border sized to its own
+       content (no dead space possible), with zero row-gap between them so
+       they visually touch: widget 3 has the top rounded corners + accent
+       stripe, widget 5 has the bottom rounded corners, and 4/5 get a
+       border-top divider line instead of a gap. Same background color on
+       all three keeps the seam invisible. */
+    #section-outer-home-mission-control .widget-base {
+      position: relative;
+      z-index: 1;
+      padding: 16px 18px !important;
+    }
+    #section-outer-home-mission-control .widget-base:nth-child(1),
+    #section-outer-home-mission-control .widget-base:nth-child(2),
+    #section-outer-home-mission-control .widget-base:nth-child(6) {
+      overflow: hidden;
+      border-radius: 16px !important;
+      border: 1px solid rgba(255, 255, 255, 0.10) !important;
+      background:
+        radial-gradient(140% 100% at 18% -10%, rgba(255, 255, 255, 0.10), transparent 55%),
+        linear-gradient(160deg, rgba(255, 255, 255, 0.06), rgba(13, 15, 20, 0.94) 45%) !important;
+      box-shadow:
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.14),
+        0 16px 38px rgba(0, 0, 0, 0.36) !important;
+    }
+    #section-outer-home-mission-control .widget-base:nth-child(1)::before,
+    #section-outer-home-mission-control .widget-base:nth-child(2)::before,
+    #section-outer-home-mission-control .widget-base:nth-child(6)::before {
+      content: "";
+      position: absolute;
+      inset: 0 auto auto 0;
+      width: 100%;
+      height: 4px;
+      background: linear-gradient(90deg, #ff8c00, var(--odyssey-gold) 65%, var(--odyssey-orange));
+      opacity: 0.95;
+    }
+    #section-outer-home-mission-control .widget-base:nth-child(3),
+    #section-outer-home-mission-control .widget-base:nth-child(4),
+    #section-outer-home-mission-control .widget-base:nth-child(5) {
+      position: relative;
+      overflow: hidden;
+      border-left: 1px solid rgba(255, 255, 255, 0.10) !important;
+      border-right: 1px solid rgba(255, 255, 255, 0.10) !important;
+      background: linear-gradient(160deg, rgba(255, 255, 255, 0.05), rgba(13, 15, 20, 0.94) 60%) !important;
+    }
+    #section-outer-home-mission-control .widget-base:nth-child(3) {
+      border-top: 1px solid rgba(255, 255, 255, 0.10) !important;
+      border-top-left-radius: 16px !important;
+      border-top-right-radius: 16px !important;
+      box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.14) !important;
+    }
+    #section-outer-home-mission-control .widget-base:nth-child(3)::before {
+      content: "";
+      position: absolute;
+      inset: 0 auto auto 0;
+      width: 100%;
+      height: 4px;
+      background: linear-gradient(90deg, #ff8c00, var(--odyssey-gold) 65%, var(--odyssey-orange));
+      opacity: 0.95;
+    }
+    #section-outer-home-mission-control .widget-base:nth-child(4) {
+      border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+    }
+    #section-outer-home-mission-control .widget-base:nth-child(5) {
+      border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.10) !important;
+      border-bottom-left-radius: 16px !important;
+      border-bottom-right-radius: 16px !important;
+      box-shadow: 0 16px 38px rgba(0, 0, 0, 0.36) !important;
+    }
+    /* Dashy's own EmbedWidget.vue hardcodes `.html-widget { min-height: 240px }`,
+       which floors the Kubernetes card (real content ~130px) well past its
+       actual height -- that's the dead space. Proxmox Metrics is also type:
+       embed but its real content already exceeds 240px, so removing the
+       floor is safe for both. */
+    #section-outer-home-mission-control .html-widget {
+      min-height: 0 !important;
+    }
+
+sections:
+  - name: Command Deck
+    icon: fas fa-satellite-dish
+    items:
+      - title: Proxmox
+        description: Hypervisor, VMs, and LXC containers
+        icon: hl-proxmox
+        url: https://proxmox.dash.itodyssey.io
+        statusCheck: true
+
+      - title: Traefik
+        description: Edge routing, certs, and ingress visibility
+        icon: hl-traefik
+        url: https://traefik.dash.itodyssey.io
+        statusCheck: true
+
+      - title: Pi-hole
+        description: DNS filtering and local resolution
+        icon: hl-pi-hole
+        url: https://pihole.dash.itodyssey.io/admin
+        statusCheck: true
+
+      - title: Prometheus
+        description: Time-series metrics and alert data
+        icon: hl-prometheus
+        url: https://prometheus.dash.itodyssey.io
+        statusCheck: true
+
+      - title: Grafana
+        description: Metrics, observability, and dashboards
+        icon: hl-grafana
+        url: https://grafana.dash.itodyssey.io
+        statusCheck: true
+
+      - title: Uptime Kuma
+        description: Service monitoring and status history
+        icon: hl-uptime-kuma
+        url: https://status.dash.itodyssey.io
+        statusCheck: true
+
+      - title: Headlamp
+        description: Kubernetes cluster dashboard
+        icon: hl-kubernetes
+        url: https://headlamp.dash.itodyssey.io
+        statusCheck: true
+
+      - title: Portainer
+        description: Containers, stacks, and runtime operations
+        icon: hl-portainer
+        url: https://portainer.dash.itodyssey.io
+        statusCheck: true
+
+      - title: Dozzle
+        description: Live Docker container log viewer
+        icon: hl-dozzle
+        url: https://dozzle.dash.itodyssey.io
+        statusCheck: true
+
+      - title: Jellyfin
+        description: Media streaming and library access
+        icon: hl-jellyfin
+        url: https://jellyfin.dash.itodyssey.io
+        statusCheck: true
+
+  - name: Mission Control
+    icon: fas fa-bolt
+    widgets:
+      - type: pi-hole-stats-v6
+        label: Pi-hole
+        useProxy: false
+        options:
+          hostname: https://pihole.dash.itodyssey.io
+          apiKey: VUE_APP_PIHOLE_API_KEY
+
+      - type: uptime-kuma
+        label: Uptime Kuma
+        useProxy: true
+        options:
+          url: https://status.dash.itodyssey.io/metrics
+          apiKey: VUE_APP_KUMA_API_KEY
+
+      - type: proxmox-lists
+        label: Proxmox VMs
+        useProxy: true
+        options:
+          title: Virtual Machines
+          cluster_url: https://proxmox.dash.itodyssey.io
+          user_name: dashy@pve
+          token_name: dashy
+          token_uuid: VUE_APP_PROXMOX_TOKEN
+          node: proxmox
+          node_data: qemu
+          hide_templates: true
+
+      - type: proxmox-lists
+       # label: Proxmox Containers
+        useProxy: true
+        options:
+          title: Containers
+          cluster_url: https://proxmox.dash.itodyssey.io
+          user_name: dashy@pve
+          token_name: dashy
+          token_uuid: VUE_APP_PROXMOX_TOKEN
+          node: proxmox
+          node_data: lxc
+          hide_templates: true
+
+      - type: embed
+        options:
+          html: |
+            <div id="k8s-status-card" class="k8s-status-card">
+              <div class="k8s-title-pill">Kubernetes</div>
+              <div class="k8s-stats-grid">
+              <div class="k8s-stat">
+                <span class="k8s-value" data-field="nodes">—</span>
+                <span class="k8s-label">Nodes Ready</span>
+              </div>
+              <div class="k8s-stat">
+                <span class="k8s-value" data-field="pods">—</span>
+                <span class="k8s-label">Pods Running</span>
+              </div>
+              <div class="k8s-stat">
+                <span class="k8s-value" data-field="ns">—</span>
+                <span class="k8s-label">Namespaces</span>
+              </div>
+              <div class="k8s-stat">
+                <span class="k8s-value" data-field="scrape">—</span>
+                <span class="k8s-label">Scrape Health</span>
+              </div>
+              </div>
+            </div>
+          css: |
+            .k8s-title-pill {
+              outline: 2px solid transparent;
+              border: 1px solid var(--outline-color);
+              border-radius: var(--curve-factor);
+              box-shadow: var(--item-shadow);
+              color: var(--item-text-color);
+              margin: .5rem;
+              padding: 0.3rem;
+              background: var(--item-background);
+              text-align: center;
+            }
+            .k8s-stats-grid {
+              display: grid;
+              grid-template-columns: repeat(2, 1fr);
+              gap: 10px;
+              padding: 4px 2px;
+            }
+            .k8s-status-card .k8s-stat {
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+            }
+            .k8s-status-card .k8s-value {
+              font-size: 1.3rem;
+              font-weight: 700;
+              color: var(--odyssey-blue, #24aff5) !important;
+            }
+            .k8s-status-card .k8s-label {
+              font-size: 0.65rem;
+              text-transform: uppercase;
+              letter-spacing: 0.05em;
+              color: var(--odyssey-muted, #cbd5e1) !important;
+              margin-top: 2px;
+            }
+            .k8s-status-card.k8s-offline .k8s-value {
+              color: #f87171;
+            }
+          script: |
+            (function() {
+              function render(data) {
+                var el = document.getElementById('k8s-status-card');
+                if (!el) return;
+                if (!data || data.status === 'unavailable' || !data.metrics) {
+                  el.querySelectorAll('.k8s-value').forEach(function(e) { e.textContent = 'offline'; });
+                  el.classList.add('k8s-offline');
+                  return;
+                }
+                el.classList.remove('k8s-offline');
+                var m = data.metrics;
+                el.querySelector('[data-field="nodes"]').textContent = m.k8sNodesReady + '/' + m.k8sNodesTotal;
+                el.querySelector('[data-field="pods"]').textContent = m.k8sWorkloadPodsRunning;
+                el.querySelector('[data-field="ns"]').textContent = m.k8sManagedNamespaces;
+                el.querySelector('[data-field="scrape"]').textContent = m.k8sScrapeHealthy === 1 ? 'Healthy' : 'Degraded';
+              }
+              function fetchMetrics() {
+                fetch('https://jeff.itodyssey.io/api/homelab-metrics')
+                  .then(function(r) { return r.json(); })
+                  .then(render)
+                  .catch(function() { render(null); });
+              }
+              fetchMetrics();
+              if (window.__k8sStatusInterval) { clearInterval(window.__k8sStatusInterval); }
+              window.__k8sStatusInterval = setInterval(fetchMetrics, 45000);
+            })();
+
+      - type: embed
+        label: Proxmox Metrics
+        options:
+          html: |
+            <div id="pve-metrics-card" class="pve-metrics-card">
+              <div class="pve-gauge" data-field="cpu">
+                <svg class="pve-gauge-svg" viewBox="0 0 96 96">
+                  <defs>
+                    <linearGradient id="pve-grad-cpu" x1="0" y1="0" x2="96" y2="96" gradientUnits="userSpaceOnUse">
+                      <stop class="pve-stop-0" offset="0%" stop-color="#0f3a56" />
+                      <stop class="pve-stop-1" offset="50%" stop-color="#24aff5" />
+                      <stop class="pve-stop-2" offset="100%" stop-color="#8fdcff" />
+                    </linearGradient>
+                  </defs>
+                  <circle class="pve-track" cx="48" cy="48" r="43" transform="rotate(135 48 48)" stroke-dasharray="202.63 270.18" />
+                  <circle class="pve-glow" cx="48" cy="48" r="43" transform="rotate(135 48 48)" stroke="#24aff5" stroke-dasharray="0 270.18" />
+                  <circle class="pve-arc" cx="48" cy="48" r="43" transform="rotate(135 48 48)" stroke="url(#pve-grad-cpu)" stroke-dasharray="0 270.18" />
+                  <text class="pve-gauge-value" x="50%" y="52%" text-anchor="middle" dominant-baseline="middle">—</text>
+                </svg>
+                <span class="pve-gauge-label">CPU</span>
+              </div>
+              <div class="pve-gauge" data-field="mem">
+                <svg class="pve-gauge-svg" viewBox="0 0 96 96">
+                  <defs>
+                    <linearGradient id="pve-grad-mem" x1="0" y1="0" x2="96" y2="96" gradientUnits="userSpaceOnUse">
+                      <stop class="pve-stop-0" offset="0%" stop-color="#0f3a56" />
+                      <stop class="pve-stop-1" offset="50%" stop-color="#24aff5" />
+                      <stop class="pve-stop-2" offset="100%" stop-color="#8fdcff" />
+                    </linearGradient>
+                  </defs>
+                  <circle class="pve-track" cx="48" cy="48" r="43" transform="rotate(135 48 48)" stroke-dasharray="202.63 270.18" />
+                  <circle class="pve-glow" cx="48" cy="48" r="43" transform="rotate(135 48 48)" stroke="#24aff5" stroke-dasharray="0 270.18" />
+                  <circle class="pve-arc" cx="48" cy="48" r="43" transform="rotate(135 48 48)" stroke="url(#pve-grad-mem)" stroke-dasharray="0 270.18" />
+                  <text class="pve-gauge-value" x="50%" y="52%" text-anchor="middle" dominant-baseline="middle">—</text>
+                </svg>
+                <span class="pve-gauge-label">Memory</span>
+              </div>
+              <div class="pve-gauge" data-field="disk">
+                <svg class="pve-gauge-svg" viewBox="0 0 96 96">
+                  <defs>
+                    <linearGradient id="pve-grad-disk" x1="0" y1="0" x2="96" y2="96" gradientUnits="userSpaceOnUse">
+                      <stop class="pve-stop-0" offset="0%" stop-color="#0f3a56" />
+                      <stop class="pve-stop-1" offset="50%" stop-color="#24aff5" />
+                      <stop class="pve-stop-2" offset="100%" stop-color="#8fdcff" />
+                    </linearGradient>
+                  </defs>
+                  <circle class="pve-track" cx="48" cy="48" r="43" transform="rotate(135 48 48)" stroke-dasharray="202.63 270.18" />
+                  <circle class="pve-glow" cx="48" cy="48" r="43" transform="rotate(135 48 48)" stroke="#24aff5" stroke-dasharray="0 270.18" />
+                  <circle class="pve-arc" cx="48" cy="48" r="43" transform="rotate(135 48 48)" stroke="url(#pve-grad-disk)" stroke-dasharray="0 270.18" />
+                  <text class="pve-gauge-value" x="50%" y="52%" text-anchor="middle" dominant-baseline="middle">—</text>
+                </svg>
+                <span class="pve-gauge-label">Disk</span>
+              </div>
+            </div>
+          css: |
+            .pve-metrics-card {
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              gap: 34px;
+              padding: 18px 2px 4px;
+            }
+            .pve-metrics-card .pve-gauge {
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              gap: 8px;
+            }
+            .pve-metrics-card .pve-gauge-svg {
+              width: 128px;
+              height: 128px;
+              overflow: visible;
+            }
+            .pve-metrics-card .pve-track {
+              fill: none;
+              stroke: rgba(255, 255, 255, 0.07);
+              stroke-width: 10;
+              stroke-linecap: round;
+            }
+            .pve-metrics-card .pve-glow {
+              fill: none;
+              stroke-width: 12;
+              stroke-linecap: round;
+              filter: blur(5px);
+              opacity: 0.25;
+              transition: stroke-dasharray 600ms cubic-bezier(0.16, 1, 0.3, 1), stroke 300ms ease;
+            }
+            .pve-metrics-card .pve-arc {
+              fill: none;
+              stroke-width: 10;
+              stroke-linecap: round;
+              transition: stroke-dasharray 600ms cubic-bezier(0.16, 1, 0.3, 1);
+            }
+            .pve-metrics-card .pve-gauge-value {
+              fill: #fff !important;
+              font-size: 15px;
+              font-weight: 700;
+            }
+            .pve-metrics-card .pve-gauge-label {
+              font-size: 0.65rem;
+              text-transform: uppercase;
+              letter-spacing: 0.05em;
+              color: var(--odyssey-muted, #cbd5e1) !important;
+            }
+            .pve-metrics-card.pve-offline .pve-gauge-value {
+              fill: #f87171 !important;
+            }
+          script: |
+            (function() {
+              var RADIUS = 43;
+              var CIRCUMFERENCE = 2 * Math.PI * RADIUS;
+              var TRACK_LENGTH = CIRCUMFERENCE * 0.75;
+              var WARNING_THRESHOLD = 70;
+              var CRITICAL_THRESHOLD = 90;
+              var GRADIENT_STOPS = {
+                healthy: ['#0f3a56', '#24aff5', '#8fdcff'],
+                warning: ['#ff8c00', '#ffd700', '#f76d11'],
+                critical: ['#7f1d1d', '#e2534f', '#fca5a5'],
+              };
+              var GLOW_COLOR = { healthy: '#24aff5', warning: '#ffd700', critical: '#e2534f' };
+
+              function tierFor(value) {
+                if (value >= CRITICAL_THRESHOLD) return 'critical';
+                if (value >= WARNING_THRESHOLD) return 'warning';
+                return 'healthy';
+              }
+
+              function setGauge(field, value) {
+                var root = document.querySelector('#pve-metrics-card .pve-gauge[data-field="' + field + '"]');
+                if (!root) return;
+                var arc = root.querySelector('.pve-arc');
+                var glow = root.querySelector('.pve-glow');
+                var text = root.querySelector('.pve-gauge-value');
+                if (typeof value !== 'number') {
+                  arc.setAttribute('stroke-dasharray', '0 ' + CIRCUMFERENCE);
+                  glow.setAttribute('stroke-dasharray', '0 ' + CIRCUMFERENCE);
+                  text.textContent = '—';
+                  return;
+                }
+                var clamped = Math.min(100, Math.max(0, value));
+                var len = (clamped / 100) * TRACK_LENGTH;
+                var tier = tierFor(clamped);
+                var stops = GRADIENT_STOPS[tier];
+                arc.setAttribute('stroke-dasharray', len + ' ' + CIRCUMFERENCE);
+                glow.setAttribute('stroke-dasharray', len + ' ' + CIRCUMFERENCE);
+                glow.setAttribute('stroke', GLOW_COLOR[tier]);
+                root.querySelector('.pve-stop-0').setAttribute('stop-color', stops[0]);
+                root.querySelector('.pve-stop-1').setAttribute('stop-color', stops[1]);
+                root.querySelector('.pve-stop-2').setAttribute('stop-color', stops[2]);
+                text.textContent = Math.round(clamped) + '%';
+              }
+
+              function render(data) {
+                var el = document.getElementById('pve-metrics-card');
+                if (!el) return;
+                if (!data || data.status === 'unavailable' || !data.metrics) {
+                  ['cpu', 'mem', 'disk'].forEach(function(f) { setGauge(f, null); });
+                  el.classList.add('pve-offline');
+                  return;
+                }
+                el.classList.remove('pve-offline');
+                var m = data.metrics;
+                setGauge('cpu', m.cpuPercent);
+                setGauge('mem', m.memoryPercent);
+                setGauge('disk', m.diskPercent);
+              }
+              function fetchMetrics() {
+                fetch('https://jeff.itodyssey.io/api/homelab-metrics')
+                  .then(function(r) { return r.json(); })
+                  .then(render)
+                  .catch(function() { render(null); });
+              }
+              fetchMetrics();
+              if (window.__pveMetricsInterval) { clearInterval(window.__pveMetricsInterval); }
+              window.__pveMetricsInterval = setInterval(fetchMetrics, 45000);
+            })();
+
+  - name: Incoming Transmissions
+    icon: fas fa-tower-broadcast
+    widgets:
+      - type: rss-feed
+        label: The New Stack — Cloud, DevOps & Platform Engineering
+        options:
+          rssUrl: https://thenewstack.io/feed/
+          limit: 4
+
+      - type: rss-feed
+        label: Kubernetes Blog
+        options:
+          rssUrl: https://kubernetes.io/feed.xml
+          limit: 4
+
+      - type: rss-feed
+        label: CNCF Blog
+        options:
+          rssUrl: https://www.cncf.io/feed/
+          limit: 4
