@@ -1,6 +1,6 @@
 # Cloud-Native Homelab
 
-[![Homelab CI](https://github.com/Jeff-Fontenot/homelab/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Jeff-Fontenot/homelab/actions/workflows/ci.yml)
+[![CI](https://github.com/Jeff-Fontenot/homelab/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Jeff-Fontenot/homelab/actions/workflows/ci.yml)
 
 I designed and built this Proxmox-based platform for everyday services, application workloads, and infrastructure experimentation. It runs Docker Compose services alongside a three-node Kubernetes cluster, supported by private connectivity, DNS, TLS routing, centralized metrics and logs, and a custom operations dashboard. A Prometheus, Alloy, and Grafana Cloud pipeline publishes selected live host and Kubernetes telemetry to [my portfolio](https://jeff.itodyssey.io).
 

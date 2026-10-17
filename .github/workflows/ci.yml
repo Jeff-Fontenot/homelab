@@ -1,4 +1,4 @@
-name: Homelab CI
+name: CI
 
 on:
   push:
