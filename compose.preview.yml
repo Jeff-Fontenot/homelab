@@ -1,0 +1,39 @@
+# Give the preview its own Compose project.
+name: homelab-preview
+
+services:
+  dashy:
+    image: lissy93/dashy@sha256:cc22a712b019da410d448df1a44e025ec2c7a1fb4e8a5ca8367d22787c993bac
+
+    # Browser access from this workstation.
+    ports:
+      - "127.0.0.1:8081:8080"
+
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      VUE_APP_PROXMOX_TOKEN: "${DASHY_PROXMOX_TOKEN:?Set DASHY_PROXMOX_TOKEN in .env.preview}"
+
+    volumes:
+      # Use the files you edit in this checkout.
+      - ./dashy-conf.yml:/app/user-data/conf.yml
+      - ./icons:/app/user-data/item-icons:ro
+
+      # Include the same widget patches as Services.
+      - ./patches/Proxmox.vue:/app/src/components/Widgets/Proxmox.vue:ro
+      - ./patches/RssFeed.vue:/app/src/components/Widgets/RssFeed.vue:ro
+      - ./patches/UptimeKuma.vue:/app/src/components/Widgets/UptimeKuma.vue:ro
+
+      # Credentials stay in ignored local files.
+      - ./secrets/pihole/api-key:/run/secrets/pihole-api-key:ro
+      - ./secrets/uptime-kuma/api-key:/run/secrets/kuma-api-key:ro
+
+    # Load widget credentials before Dashy's build-on-start process.
+    entrypoint:
+      - /bin/sh
+      - -ec
+      - |
+        VUE_APP_PIHOLE_API_KEY="$$(cat /run/secrets/pihole-api-key)"
+        VUE_APP_KUMA_API_KEY="$$(cat /run/secrets/kuma-api-key)"
+        export VUE_APP_PIHOLE_API_KEY VUE_APP_KUMA_API_KEY
+        exec docker-entrypoint.sh yarn build-and-start
