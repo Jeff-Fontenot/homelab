@@ -1,0 +1,57 @@
+name: CD
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    branches: [main]
+    types: [completed]
+
+permissions:
+  contents: read
+  id-token: write
+
+# Finish an active deployment before another one starts.
+concurrency:
+  group: dashy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy-dashy:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    steps:
+      - name: Join Tailscale
+        uses: tailscale/github-action@v4
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          audience: ${{ secrets.TS_AUDIENCE }}
+          tags: tag:homelab-ci
+
+      - name: Deploy the commit that passed CI
+        shell: bash
+        env:
+          DEPLOY_SHA: ${{ github.event.workflow_run.head_sha }}
+          SSH_KEY: ${{ secrets.HOMELAB_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.HOMELAB_KNOWN_HOSTS }}
+        run: |
+          install -d -m 700 "$HOME/.ssh"
+          printf '%s\n' "$SSH_KEY" > "$HOME/.ssh/homelab_actions_ed25519"
+          printf '%s\n' "$KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 600 "$HOME/.ssh/homelab_actions_ed25519" "$HOME/.ssh/known_hosts"
+
+          ssh -T -i "$HOME/.ssh/homelab_actions_ed25519" \
+            -o IdentitiesOnly=yes \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=yes \
+            -o ConnectTimeout=30 \
+            -o ServerAliveInterval=30 \
+            -o ServerAliveCountMax=4 \
+            jeff@100.120.146.84 "$DEPLOY_SHA" | tee "$RUNNER_TEMP/deployment.log"
+
+          # Reject the old readiness echo or any incomplete execution.
+          grep -Fx "DEPLOYED $DEPLOY_SHA" "$RUNNER_TEMP/deployment.log"
