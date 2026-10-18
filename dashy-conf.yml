@@ -440,7 +440,7 @@ sections:
        # label: Proxmox Containers
         useProxy: true
         options:
-          title: Containers
+          title: LXC Containers
           cluster_url: https://proxmox.dash.itodyssey.io
           user_name: dashy@pve
           token_name: dashy
