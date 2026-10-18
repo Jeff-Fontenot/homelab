@@ -48,7 +48,7 @@ services:
 
 
   dashy:
-    image: lissy93/dashy:latest
+    image: lissy93/dashy@sha256:cc22a712b019da410d448df1a44e025ec2c7a1fb4e8a5ca8367d22787c993bac
     container_name: dashy
     restart: unless-stopped
     networks: [homelab]
