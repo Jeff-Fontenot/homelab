@@ -1,14 +1,14 @@
 # Cloud-Native Homelab
 
-[![CI](https://github.com/Jeff-Fontenot/homelab/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Jeff-Fontenot/homelab/actions/workflows/ci.yml)
+[![CI](https://github.com/Jeff-Fontenot/homelab/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Jeff-Fontenot/homelab/actions/workflows/ci.yml) [![CD](https://github.com/Jeff-Fontenot/homelab/actions/workflows/cd.yml/badge.svg?branch=main)](https://github.com/Jeff-Fontenot/homelab/actions/workflows/cd.yml)
 
 I designed and built this Proxmox-based platform for everyday services, application workloads, and infrastructure experimentation. It runs Docker Compose services alongside a three-node Kubernetes cluster, supported by private connectivity, DNS, TLS routing, centralized metrics and logs, and a custom operations dashboard. A Prometheus, Alloy, and Grafana Cloud pipeline publishes selected live host and Kubernetes telemetry to [my portfolio](https://jeff.itodyssey.io).
 
-**Status: Operational · Active Development.** Core services, the dashboard, and portfolio telemetry are running. This repository captures selected configuration from the Services VM. Documentation and operational runbooks are being expanded; automated deployment is planned.
+**Status: Operational · Active Development.** Core services, the dashboard, and portfolio telemetry are running. This repository captures selected configuration from the Services VM. GitHub Actions validates the Compose configuration on pushes to `main` and on pull requests. Automated deployment is being implemented; operational runbooks remain on the roadmap.
 
-(add screenshot of the current Odyssey Homelab dashboard showing Command Deck and Mission Control)
+![Odyssey Homelab dashboard showing service links, availability checks, Proxmox utilization, and Kubernetes state](docs/images/odyssey-homelab-dashboard.png)
 
-Dashboard captures show a point-in-time view of the running lab.
+Dashboard capture: 2026-10-17. Screenshots show a point-in-time view of the running lab.
 
 ## Purpose and scope
 
@@ -17,6 +17,10 @@ The lab connects the systems behind a deployment: compute, DNS, private access, 
 This repository documents the platform, selected configuration, and operational procedures. Application source and delivery pipelines belong in their own project repositories, including [Ops-Status](https://github.com/Jeff-Fontenot/ops-status) and [WakeTrail](https://github.com/it-odyssey/waketrail). Deploying Ops-Status into the lab remains future integration work.
 
 ## Architecture
+
+![Homelab platform and selected telemetry paths](docs/diagrams/homelab-architecture.svg)
+
+[Edit the architecture diagram in Excalidraw](docs/diagrams/homelab-architecture.excalidraw). The drawing shows the platform and selected telemetry paths; it is not a complete network or firewall map.
 
 The physical host is a Dell OptiPlex with an Intel i5, 32 GB RAM, and a 1 TB SSD.
 
@@ -49,6 +53,7 @@ The Services VM was previously named `System-Services`. A detailed inventory of 
 | Prometheus | Metrics collection, queries, and recording rules |
 | Node Exporter and cAdvisor | Linux host and container metrics |
 | Pi-hole Exporter and Traefik metrics | DNS-service and reverse-proxy measurements |
+| Proxmox VE Exporter | Hypervisor CPU, memory, and root-filesystem utilization |
 | kube-state-metrics | Kubernetes object-state measurements |
 | Grafana | Local metric dashboards |
 | Loki and Promtail | Centralized logs and log collection; the Promtail configuration is included |
@@ -91,20 +96,22 @@ Local Grafana dashboards and Loki logs support deeper investigation. Uptime Kuma
 
 | Measurement | Interpretation |
 | --- | --- |
-| Host CPU, memory, and disk | Utilization on the services VM, not total Proxmox utilization |
-| Running containers | Containers included by the deployed rule; export its exact scope |
-| Healthy/configured scrape targets | Success of metrics scrapes, not full application health |
-| Ready Kubernetes nodes | Node Ready state, not application availability |
-| Running pods | Pod phase; Running alone does not establish readiness |
-| Namespace count | Query-defined scope; confirm whether all namespaces or only selected namespaces are counted |
+| Host CPU, memory, and disk | Proxmox hypervisor CPU, memory, and root-filesystem utilization, selected with `id="node/proxmox"` |
+| Running containers | Count of cAdvisor `container_last_seen` series with `job="cadvisor"` and a nonempty image label; the rule is a series count rather than a direct Docker running-state query |
+| Healthy/configured scrape targets | `sum(up)` compared with `count(up)` across Prometheus scrape targets; this measures metrics collection |
+| Ready Kubernetes nodes | Count of nodes with Ready condition `true`, from the `kubernetes-state` job |
+| Running pods | Running-phase pods excluding `kube-system`, `kube-public`, `kube-node-lease`, and `observability`; phase does not establish workload readiness |
+| Namespace count | Active namespaces excluding `kube-system`, `kube-public`, and `kube-node-lease`; `observability` is included |
 
 Counts and percentages change. The public display is operational evidence, not an SLO or an availability guarantee.
 
-(add screenshot of the live portfolio telemetry card showing services-host gauges and Kubernetes counts)
+![Live Homelab Telemetry card on the public portfolio showing Proxmox CPU, memory, and disk utilization, running container count, Prometheus scrape target health, and Kubernetes node/pod/namespace counts](docs/images/portfolio-homelab-metrics.png)
+
+Telemetry capture: 2026-10-17.
 
 ### Recording rules and federation
 
-The recording-rule file is included at [data/prometheus/portfolio-rules.yml](data/prometheus/portfolio-rules.yml), alongside [the Prometheus configuration](data/prometheus/prometheus.yml). Exact query scopes and public labels will be documented as the configuration review continues.
+The recording-rule file is included at [data/prometheus/portfolio-rules.yml](data/prometheus/portfolio-rules.yml), alongside [the Prometheus configuration](data/prometheus/prometheus.yml). The table above records the scopes in the committed rules. Alloy configuration and forwarding labels still need to be captured to complete the published pipeline reference.
 
 An illustrative federation request for one approved metric is:
 
@@ -195,6 +202,10 @@ The Services checkout lives at `~/homelab`. Configuration and local application 
 | Path | Contents |
 | --- | --- |
 | [docker-compose.yml](docker-compose.yml) | Services stack definition |
+| [compose.preview.yml](compose.preview.yml) | Local Dashy preview definition, prepared on Omarchy; add it in the same commit as this documentation |
+| [.github/workflows/ci.yml](.github/workflows/ci.yml) | Automated Compose validation |
+| [docs/diagrams/](docs/diagrams/) | Editable Excalidraw architecture source and exported diagrams |
+| [docs/images/](docs/images/) | Point-in-time dashboard and portfolio screenshots |
 | [dashy-conf.yml](dashy-conf.yml) | Operational dashboard configuration |
 | [data/diun/diun.yml](data/diun/diun.yml) | DIUN configuration |
 | [data/grafana-provisioning/datasources/prometheus.yml](data/grafana-provisioning/datasources/prometheus.yml) | Grafana datasource provisioning |
@@ -202,7 +213,7 @@ The Services checkout lives at `~/homelab`. Configuration and local application 
 | [data/prometheus/portfolio-rules.yml](data/prometheus/portfolio-rules.yml) | Portfolio recording rules |
 | [data/promtail/config.yml](data/promtail/config.yml) | Promtail configuration |
 | [data/traefik/dynamic.yml](data/traefik/dynamic.yml) | Traefik dynamic configuration |
-| [data/unbound/unbound.conf](data/unbound/unbound.conf) | Unbound configuration |
+| [data/unbound/unbound.conf](data/unbound/unbound.conf) | Reference Unbound configuration; its Compose bind mount is currently commented out |
 | [icons/](icons/) | Dashboard branding assets |
 | [patches/](patches/) | Dashy widget customizations |
 | [.env.example](.env.example) | Environment-variable template |
@@ -216,7 +227,7 @@ Additional architecture, inventory, networking, observability, recovery, and tro
 
 ## Configuration workflow
 
-Omarchy is the intended primary workspace for documentation and configuration. Services holds the operational checkout. Until deployment automation is implemented, configuration changes must be transferred to Services and applied deliberately; pushing to GitHub alone does not deploy them.
+Omarchy is the intended primary workspace for documentation and configuration. Services holds the operational checkout. GitHub Actions validates the Compose configuration and automatically deploys validated Dashy changes to Services over Tailscale and SSH, with container health verification.
 
 Before each commit, stage the intended files and scan that snapshot:
 
@@ -230,11 +241,37 @@ The script runs Gitleaks in a temporary Docker container with a read-only reposi
 
 The initial staged configuration snapshot passed this scan on **2026-10-17**, with approximately **82.49 KB scanned and no leaks found**. An earlier manual review also reported no exposed secrets. Automated scanning complements manual review of credential handling.
 
-### Planned CI/CD
+### Continuous integration
 
-The proposed workflow is GitHub-hosted validation followed by deployment over Tailscale and SSH. Dashy is the first planned deployment target. Configuration changes will be validated, deployed as a specific commit, and checked afterward, with a documented rollback procedure. Documentation-only changes will not trigger service deployment.
+[The CI workflow](.github/workflows/ci.yml) runs on pushes to `main` and on pull requests. A GitHub-hosted Ubuntu runner checks out the repository and runs:
 
-This workflow is planned; no GitHub Actions deployment is currently implemented in this repository.
+```bash
+docker compose --env-file .env.example config --quiet
+```
+
+This validates Compose syntax, supported configuration fields, and environment-variable interpolation using the example file. It does not start containers, exercise live credentials, validate Prometheus rule expressions, or establish application health.
+
+On 2026-10-17, the check passed for the initial configuration, rejected an intentionally unsupported Compose property, and passed again after that test commit was reverted. Both pull-request and `main` push triggers were verified.
+
+The normal workflow for this owner-operated lab is direct commits and pushes to `main`. Pull requests remain available for changes that benefit from a separate review thread.
+
+### Local dashboard preview
+
+Omarchy runs a Dashy-only preview using `compose.preview.yml`, pinned to the image digest used by the Services container. The preview mounts the local dashboard configuration, icons, and custom Vue widgets. Its Proxmox token comes from ignored `.env.preview`; Pi-hole and Uptime Kuma credentials are local ignored files under `secrets/`.
+
+```bash
+# Validate the preview definition without printing resolved credentials.
+docker compose --env-file .env.preview -f compose.preview.yml config --quiet
+
+# Start the preview on localhost:8081.
+docker compose --env-file .env.preview -f compose.preview.yml up -d
+```
+
+The preview renders the dashboard layout. Some Proxmox/Kubernetes metrics and RSS content are not currently loading; those preview differences remain follow-up work. Layout changes can be inspected locally before a commit. Changes to the patched Vue components require rebuilding/restarting the preview process.
+
+### Continuous delivery
+
+Pushes to main trigger Compose validation. After successful validation, the CD workflow connects to Services over Tailscale and SSH, applies the validated commit, and recreates Dashy when its configuration, assets, patches, or Compose definition change. Documentation-only updates synchronize the checkout and verify Dashy’s health without restarting it. Deployment is currently scoped to Dashy; rollback documentation and testing remain follow-up work.
 
 ## Current limitations
 
@@ -248,18 +285,22 @@ This workflow is planned; no GitHub Actions deployment is currently implemented 
 
 ## Roadmap
 
-### Documentation v1
+### Documentation and operations backlog
 
 - [x] Capture selected Services configuration with credentials and runtime state excluded.
 - [x] Add a reusable staged secret scan and complete the initial scan.
 - [ ] Capture Alloy configuration and Kubernetes manifests/RBAC.
 - [ ] Record a verified guest and service inventory.
-- [ ] Record the real network and telemetry paths.
-- [ ] Add current screenshots and link the deployed rules.
-- [ ] Document the exporter incident and other operational repairs.
+- [x] Add an editable platform/telemetry architecture diagram.
+- [ ] Validate and document detailed LAN, remote-access, DNS, and firewall paths.
+- [x] Add a dashboard screenshot and link the deployed recording rules.
+- [x] Add a screenshot of the portfolio telemetry section.
+- [x] Document the Pi-hole exporter authentication incident.
+- [ ] Record additional operational repairs as reusable runbooks.
 - [ ] Record backup coverage and test a recovery procedure.
-- [ ] Add automated configuration validation.
-- [ ] Implement and verify the first Dashy deployment and rollback workflow.
+- [x] Add automated Compose configuration validation and verify pass/fail/recovery behavior.
+- [x] Implement and verify the first Dashy deployment with health checks.
+- [ ] Document and test the Dashy rollback procedure.
 - [ ] Verify repository and portfolio links.
 
 ### Later improvements
@@ -278,4 +319,5 @@ This workflow is planned; no GitHub Actions deployment is currently implemented 
 - [PromQL operators](https://prometheus.io/docs/prometheus/latest/querying/operators/)
 - [Docker Compose configuration validation](https://docs.docker.com/reference/cli/docker/compose/config/)
 - [kubectl get](https://kubernetes.io/docs/reference/kubectl/generated/kubectl_get/)
+
 
