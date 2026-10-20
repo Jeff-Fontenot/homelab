@@ -18,7 +18,7 @@ This repository documents the platform, selected configuration, and operational 
 
 ## Architecture
 
-![Homelab platform and selected telemetry paths](docs/diagrams/homelab-architecture.svg)
+![Homelab platform and selected telemetry paths](docs/diagrams/Homelab-Architecture-Revised.svg)
 
 [Edit the architecture diagram in Excalidraw](docs/diagrams/homelab-architecture.excalidraw). The drawing shows the platform and selected telemetry paths; it is not a complete network or firewall map.
 
