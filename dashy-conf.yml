@@ -406,6 +406,12 @@ sections:
         url: https://jellyfin.dash.itodyssey.io
         statusCheck: true
 
+      - title: DVD Ripper
+        description: Insert a disc to rip it into Jellyfin
+        icon: fas fa-compact-disc
+        url: https://rip.dash.itodyssey.io
+        statusCheck: true
+
   - name: Mission Control
     icon: fas fa-bolt
     widgets:

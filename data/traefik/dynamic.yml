@@ -24,6 +24,14 @@ http:
         certResolver: cloudflare
       service: headlamp
 
+    ripper:
+      rule: "Host(`rip.dash.itodyssey.io`)"
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: cloudflare
+      service: ripper
+
   services:
     jellyfin:
       loadBalancer:
@@ -40,6 +48,11 @@ http:
       loadBalancer:
         servers:
           - url: "http://192.168.0.13:80"
+
+    ripper:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.0.25:8080"
 
   serversTransports:
     proxmox-transport:
